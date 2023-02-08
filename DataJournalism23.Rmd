@@ -1,0 +1,53 @@
+---
+title: "BSA Data Journalism: Who is The Most 'Like Mike'"
+output: html_document
+date: "2023-02-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+Player 1: Michael Jordan
+- prime years: 91 - 93, 96 - 98
+- often referenced as the best 6 years of basketball ever
+- arguably the greatest prime in NBA history
+- two 3 peats in the NBA finals
+```{r}
+mj_basic <- read_csv('mj.csv')
+mj_basic_prime <- mj_basic %>% filter(Age %in% c(27:29, 32:34))
+mj_basic_prime
+```
+
+Player 2: Dwyane Wade
+An explosize shooting guard and mid range threat.
+- prime years: 2006 - 2007, 2009 - 2011, 2013 
+- 2005 - 2006 saw his rise as a young star with his first title in 2006 as the main option for the Heat
+- 2009 - 2011 saw him enter his peak as he won the scoring title in 2009
+- Due to injuries in the 2012 season, his last year for consideration will be 2013 where he won another championship while greatly contributing to his team's success.
+```{r}
+dwade_basic <- read_csv('dwadebasic.csv')
+dwade_basic_prime <- dwade_basic %>% filter(Age %in% c(24:25, 27:29, 31))
+dwade_basic_prime
+```
+
+Player 3: Demar Derozan
+Highly athletic shooting guard, Jordan-like shot selection, mid range specialist, explosive finishing.
+- prime years: 2016 - 2019, 2022 - 2023
+- 14 - 17 saw his rise to stardom as a key component to the success of the Raptors
+- After having slower seasons with the Spurs, saw new explosive success as the primary threat for the Bulls starting from last season. 
+```{r}
+derozan_basic <- read_csv('derozanbasic.csv')
+derozan_basic_prime <- derozan_basic %>% filter(Age %in% c(26:29, 32:33))
+derozan_basic_prime
+```
+
+Player 4: Kobe Bryant
+Similar drive to win and be the best, Jordan-like shot selection, threat from anywhere on the court, highly athletic.
+
+Player 5: Lebron James
+Considered one of, if not, the biggest threat to being considered the GOAT
+
+Player 6: Kawhi Leondard
+Defensive pressure, mid range specialist, Jordan-like shot selection.
