@@ -45,6 +45,11 @@ derozan_basic_prime
 
 Player 4: Kobe Bryant
 Similar drive to win and be the best, Jordan-like shot selection, threat from anywhere on the court, highly athletic.
+```{r}
+kobe_basic <- read_csv('kobebasic')
+kobe_basic_prime <- kobe_basic %>% filter (Age %in% c(22:23, 27:28, 30:31))
+kobe_basic_prime
+```
 
 Player 5: Lebron James
 Considered one of, if not, the biggest threat to being considered the GOAT
