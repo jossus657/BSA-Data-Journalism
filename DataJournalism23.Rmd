@@ -19,6 +19,7 @@ mj_basic <- read_csv('mj.csv')
 str(mj_basic) # seeing the data types of the variables
 dim(mj_basic) # checking the dimensions in order to subset columns in vars()
 mj_basic_prime <- mj_basic %>% filter(Age %in% c(27:29, 32:34)) %>% mutate_at(vars(6:30), as.numeric)
+mj_basic_prime$PrimeYear <- 1:6
 mj_basic_prime
 ```
 
@@ -31,6 +32,7 @@ An explosive shooting guard and mid range threat.
 ```{r}
 dwade_basic <- read_csv('dwadebasic.csv')
 dwade_basic_prime <- dwade_basic %>% filter(Age %in% c(24:25, 27:29, 31))
+dwade_basic_prime$PrimeYear <- 1:6
 dwade_basic_prime
 ```
 
@@ -42,6 +44,7 @@ Highly athletic shooting guard, Jordan-like shot selection, mid range specialist
 ```{r}
 derozan_basic <- read_csv('derozanbasic.csv')
 derozan_basic_prime <- derozan_basic %>% filter(Age %in% c(26:29, 32:33))
+derozan_basic_prime$PrimeYear <- 1:6
 derozan_basic_prime
 ```
 
@@ -50,11 +53,12 @@ Similar drive to win and be the best, Jordan-like shot selection, threat from an
 ```{r}
 kobe_basic <- read_csv('kobebasic.csv')
 kobe_basic_prime <- kobe_basic %>% filter (Age %in% c(22:23, 27:28, 30:31))
+kobe_basic_prime$PrimeYear <- 1:6
 kobe_basic_prime
 ```
 
 
-Player 5: Lebron James
+Player 5: LeBron James
 Considered one of, if not, the biggest threat to being considered the GOAT. Seen as a player of comparable dominance over the league.
 - prime years: 2009 - 2014
 - often seen as his most dominant hold on the league
@@ -63,11 +67,12 @@ Considered one of, if not, the biggest threat to being considered the GOAT. Seen
 ```{r}
 lebron_basic <- read_csv('lebronbasic.csv')
 lebron_basic_prime <- lebron_basic %>% filter (Age %in% c(24:29))
+lebron_basic_prime$PrimeYear <- 1:6
 lebron_basic_prime
 ```
 
 
-Player 6: Kawhi Leondard
+Player 6: Kawhi Leonard
 Defensive pressure, mid range specialist, Jordan-like shot selection.
 - prime years: 2016 - 2021
 - saw his rise to stardom on the spurs
@@ -79,6 +84,151 @@ kawhi_basic <- read_csv('kawhibasic.csv')
 str(kawhi_basic) # seeing the data types of the variables
 dim(kawhi_basic) # checking the dimensions in order to subset columns in vars()
 kawhi_basic_prime <- kawhi_basic %>% filter(Age %in% c(24:29)) %>% mutate_at(vars(6:30), as.numeric)
+kawhi_basic_prime$PrimeYear <- 1:6
 kawhi_basic_prime
 ```
 
+
+Methodology: Similarity Stat
+- in order to compare these players we must implement a 'similarity stat'
+- this will take into account both basic and advances stats
+  - PPG, RPG, APG, FG%, SPG, Box +/-, Winshares, Shot selection, O/D Rating
+  - a percentage of similarity for each of these statistics will be taken, then standardized to a number between 1 and 10
+  - all 10 categories will then be added up and a player will recieve a score between 1 and 100
+  
+1. Dwayne Wade
+  
+```{r}
+ggplot() +
+  geom_line(data = mj_basic_prime, aes(x = PrimeYear, y = PTS), color = "red") + 
+  geom_line(data = dwade_basic_prime, aes(x = PrimeYear, y = PTS)) + 
+  geom_line(data = derozan_basic_prime, aes(x = PrimeYear, y = PTS), color = "gray") + 
+  geom_line(data = kobe_basic_prime, aes(x = PrimeYear, y = PTS), color = "purple") + 
+  geom_line(data = lebron_basic_prime, aes(x = PrimeYear, y = PTS), color = "yellow") +
+  geom_line(data = kawhi_basic_prime, aes(x = PrimeYear, y = PTS), color = "blue") +
+  geom_point(data = mj_basic_prime, aes(x = PrimeYear, y = PTS), color = "red") + 
+  geom_point(data = dwade_basic_prime, aes(x = PrimeYear, y = PTS)) +
+  geom_point(data = derozan_basic_prime, aes(x = PrimeYear, y = PTS), color = "gray") + 
+  geom_point(data = kobe_basic_prime, aes(x = PrimeYear, y = PTS), color = "purple") + 
+  geom_point(data = lebron_basic_prime, aes(x = PrimeYear, y = PTS), color = "yellow") +
+  geom_point(data = kawhi_basic_prime, aes(x = PrimeYear, y = PTS), color = "blue")
+```
+
+- from this visualization we see Dwade has a similar trend
+- Lebron has similar consistency
+- Kobe peaked the highest
+  
+```{r}
+appg <- tribble(
+~Player, ~Avg_PPG,
+#Sad?/12 months/an account
+"Michael Jordan", mean(mj_basic_prime$PTS),
+"Dwyane Wade", mean(dwade_basic_prime$PTS),
+"DeMar DeRozan", mean(derozan_basic_prime$PTS),
+"Kobe Bryant", mean(kobe_basic_prime$PTS),
+"LeBron James", mean(lebron_basic_prime$PTS),
+"Kawhi Leonard", mean(kawhi_basic_prime$PTS),
+)
+
+appg %>% ggplot() +
+  geom_bar(aes(x = Player, y = Avg_PPG, color = Player, fill = Player), stat = 'identity')
+```
+
+Criteria:
+
+Point Differential        Score
+
+0 - 1                     10
+
+1.1 - 2                    9
+
+...                         ...
+
+
+
+```{r}
+appg$Avg_PPG - mean(mj_basic_prime$PTS)
+```
+
+SCORES:
+Wade: 6
+Derozan: 5
+Kobe: 9
+Lebron: 8
+Kawhi: 4
+
+
+```{r}
+ggplot() +
+  geom_line(data = mj_basic_prime, aes(x = PrimeYear, y = STL), color = "red") + 
+  geom_line(data = dwade_basic_prime, aes(x = PrimeYear, y = STL)) + 
+  geom_line(data = derozan_basic_prime, aes(x = PrimeYear, y = STL), color = "gray") + 
+  geom_line(data = kobe_basic_prime, aes(x = PrimeYear, y = STL), color = "purple") + 
+  geom_line(data = lebron_basic_prime, aes(x = PrimeYear, y = STL), color = "yellow") +
+  geom_line(data = kawhi_basic_prime, aes(x = PrimeYear, y = STL), color = "blue") +
+  geom_point(data = mj_basic_prime, aes(x = PrimeYear, y = STL), color = "red") + 
+  geom_point(data = dwade_basic_prime, aes(x = PrimeYear, y = STL)) +
+  geom_point(data = derozan_basic_prime, aes(x = PrimeYear, y = STL), color = "gray") + 
+  geom_point(data = kobe_basic_prime, aes(x = PrimeYear, y = STL), color = "purple") + 
+  geom_point(data = lebron_basic_prime, aes(x = PrimeYear, y = STL), color = "yellow") +
+  geom_point(data = kawhi_basic_prime, aes(x = PrimeYear, y = STL), color = "blue")
+```
+
+```{r}
+aspg <- tribble(
+~Player, ~Avg_SPG,
+#Sad?/12 months/an account
+"Michael Jordan", mean(mj_basic_prime$STL),
+"Dwyane Wade", mean(dwade_basic_prime$STL),
+"DeMar DeRozan", mean(derozan_basic_prime$STL),
+"Kobe Bryant", mean(kobe_basic_prime$STL),
+"LeBron James", mean(lebron_basic_prime$STL),
+"Kawhi Leonard", mean(kawhi_basic_prime$STL),
+)
+
+aspg %>% ggplot() +
+  geom_bar(aes(x = Player, y = Avg_SPG, color = Player, fill = Player), stat = 'identity')
+```
+
+
+```{r}
+aspg$Avg_SPG - mean(mj_basic_prime$STL)
+```
+
+
+```{r}
+ggplot() +
+  geom_line(data = mj_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "red") + 
+  geom_line(data = dwade_basic_prime, aes(x = PrimeYear, y = `FG%`)) + 
+  geom_line(data = derozan_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "gray") + 
+  geom_line(data = kobe_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "purple") + 
+  geom_line(data = lebron_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "yellow") +
+  geom_line(data = kawhi_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "blue") +
+  geom_point(data = mj_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "red") + 
+  geom_point(data = dwade_basic_prime, aes(x = PrimeYear, y = `FG%`)) +
+  geom_point(data = derozan_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "gray") + 
+  geom_point(data = kobe_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "purple") + 
+  geom_point(data = lebron_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "yellow") +
+  geom_point(data = kawhi_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "blue")
+```
+
+
+```{r}
+afgp <- tribble(
+~Player, ~`Avg_FG%`,
+#Sad?/12 months/an account
+"Michael Jordan", mean(mj_basic_prime$`FG%`),
+"Dwyane Wade", mean(dwade_basic_prime$`FG%`),
+"DeMar DeRozan", mean(derozan_basic_prime$`FG%`),
+"Kobe Bryant", mean(kobe_basic_prime$`FG%`),
+"LeBron James", mean(lebron_basic_prime$`FG%`),
+"Kawhi Leonard", mean(kawhi_basic_prime$`FG%`),
+)
+
+afgp %>% ggplot() +
+  geom_bar(aes(x = Player, y = `Avg_FG%`, color = Player, fill = Player), stat = 'identity')
+```
+
+```{r}
+afgp$`Avg_FG%` - mean(mj_basic_prime$`FG%`)
+```
