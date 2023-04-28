@@ -1,0 +1,726 @@
+---
+title: "BSA Data Journalism: Who is The Most 'Like Mike'"
+output: html_document
+date: "2023-02-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+Player 1: Michael Jordan
+- prime years: 91 - 93, 96 - 98
+- often referenced as the best 6 years of basketball ever
+- arguably the greatest prime in NBA history
+- two 3 peats in the NBA finals
+```{r}
+mj_basic <- read_csv('mj.csv')
+str(mj_basic) # seeing the data types of the variables
+dim(mj_basic) # checking the dimensions in order to subset columns in vars()
+mj_basic_prime <- mj_basic %>% filter(Age %in% c(27:29, 32:34)) %>% mutate_at(vars(6:30), as.numeric)
+mj_basic_prime$PrimeYear <- 1:6
+mj_basic_prime
+```
+
+Player 2: Dwyane Wade
+An explosive shooting guard and mid range threat.
+- prime years: 2006 - 2007, 2009 - 2011, 2013 
+- 2005 - 2006 saw his rise as a young star with his first title in 2006 as the main option for the Heat
+- 2009 - 2011 saw him enter his peak as he won the scoring title in 2009
+- Due to injuries in the 2012 season, his last year for consideration will be 2013 where he won another championship while greatly contributing to his team's success.
+```{r}
+dwade_basic <- read_csv('dwadebasic.csv')
+dwade_basic_prime <- dwade_basic %>% filter(Age %in% c(24:25, 27:29, 31))
+dwade_basic_prime$PrimeYear <- 1:6
+dwade_basic_prime
+```
+
+Player 3: DeMar DeRozan
+Highly athletic shooting guard, Jordan-like shot selection, mid range specialist, explosive finishing.
+- prime years: 2016 - 2019, 2022 - 2023
+- 14 - 17 saw his rise to stardom as a key component to the success of the Raptors
+- After having slower seasons with the Spurs, saw new explosive success as the primary threat for the Bulls starting from last season. 
+```{r}
+derozan_basic <- read_csv('derozanbasic.csv')
+derozan_basic_prime <- derozan_basic %>% filter(Age %in% c(26:29, 32:33))
+derozan_basic_prime$PrimeYear <- 1:6
+derozan_basic_prime
+```
+
+Player 4: Kobe Bryant
+Similar drive to win and be the best, Jordan-like shot selection, threat from anywhere on the court, highly athletic.
+```{r}
+kobe_basic <- read_csv('kobebasic.csv')
+kobe_basic_prime <- kobe_basic %>% filter (Age %in% c(22:23, 27:28, 30:31))
+kobe_basic_prime$PrimeYear <- 1:6
+kobe_basic_prime
+```
+
+
+Player 5: LeBron James
+Considered one of, if not, the biggest threat to being considered the GOAT. Seen as a player of comparable dominance over the league.
+- prime years: 2009 - 2014
+- often seen as his most dominant hold on the league
+- won 4 MVPS, 2 Championships, 2 FMVPS
+- can argue any 6 year stretch of his career can be his prime years
+```{r}
+lebron_basic <- read_csv('lebronbasic.csv')
+lebron_basic_prime <- lebron_basic %>% filter (Age %in% c(24:29))
+lebron_basic_prime$PrimeYear <- 1:6
+lebron_basic_prime
+```
+
+
+Player 6: Kawhi Leonard
+Defensive pressure, mid range specialist, Jordan-like shot selection.
+- prime years: 2016 - 2021
+- saw his rise to stardom on the spurs
+- all of his 5 ASG appearances in this interval
+- where he won a ring with Toronto and won the FMVP
+- won FMVP with SAS in 2014
+```{r}
+kawhi_basic <- read_csv('kawhibasic.csv')
+str(kawhi_basic) # seeing the data types of the variables
+dim(kawhi_basic) # checking the dimensions in order to subset columns in vars()
+kawhi_basic_prime <- kawhi_basic %>% filter(Age %in% c(24:29)) %>% mutate_at(vars(6:30), as.numeric)
+kawhi_basic
+kawhi_basic_prime$PrimeYear <- 1:6
+kawhi_basic_prime
+```
+
+
+Methodology: Similarity Stat
+- in order to compare these players we must implement a 'similarity stat'
+- this will take into account both basic and advances stats
+  - PPG, RPG, APG, FG%, SPG, Box +/-, Winshares, Shot selection, O/D Rating
+  - a percentage of similarity for each of these statistics will be taken, then standardized to a number between 1 and 10
+  - all 10 categories will then be added up and a player will recieve a score between 1 and 100
+  
+1. Dwayne Wade
+  
+```{r}
+ggplot() +
+  geom_line(data = mj_basic_prime, aes(x = PrimeYear, y = PTS), color = "red") + 
+  geom_line(data = dwade_basic_prime, aes(x = PrimeYear, y = PTS), color = "black") + 
+  geom_line(data = derozan_basic_prime, aes(x = PrimeYear, y = PTS, color = "gray")) + 
+  geom_line(data = kobe_basic_prime, aes(x = PrimeYear, y = PTS), color = "purple") + 
+  geom_line(data = lebron_basic_prime, aes(x = PrimeYear, y = PTS), color = "yellow") +
+  geom_line(data = kawhi_basic_prime, aes(x = PrimeYear, y = PTS), color = "blue") +
+  geom_point(data = mj_basic_prime, aes(x = PrimeYear, y = PTS), color = "red") + 
+  geom_point(data = dwade_basic_prime, aes(x = PrimeYear, y = PTS), color = "black") +
+  geom_point(data = derozan_basic_prime, aes(x = PrimeYear, y = PTS, color = "gray")) + 
+  geom_point(data = kobe_basic_prime, aes(x = PrimeYear, y = PTS), color = "purple") + 
+  geom_point(data = lebron_basic_prime, aes(x = PrimeYear, y = PTS), color = "yellow") +
+  geom_point(data = kawhi_basic_prime, aes(x = PrimeYear, y = PTS), color = "blue") +
+  scale_color_manual(name='Player',
+                     breaks=c('Jordan', 'Wade', 'DeRozan', 'Bryant', 'James', 'Leonard'),
+                     values=c('Jordan' = "red", 'Wade' = "black", 'DeRozan' = "gray", 'Bryant'="purple", 'James'="yellow", 'Leonard'="blue")) +
+  theme(legend.title=element_text(size=12), legend.text=element_text(size=10)) 
+```
+
+- from this visualization we see Dwade has a similar trend
+- Lebron has similar consistency
+- Kobe peaked the highest
+  
+```{r}
+appg <- tribble(
+~Player, ~Avg_PPG,
+#Sad?/12 months/an account
+"Michael Jordan", mean(mj_basic_prime$PTS),
+"Dwyane Wade", mean(dwade_basic_prime$PTS),
+"DeMar DeRozan", mean(derozan_basic_prime$PTS),
+"Kobe Bryant", mean(kobe_basic_prime$PTS),
+"LeBron James", mean(lebron_basic_prime$PTS),
+"Kawhi Leonard", mean(kawhi_basic_prime$PTS),
+)
+
+appg %>% ggplot() +
+  geom_bar(aes(x = Player, y = Avg_PPG, color = Player, fill = Player), stat = 'identity')
+```
+
+Criteria:
+
+Point Differential        Score
+
+0 - 1                     10
+
+1.1 - 2                    9
+
+...                         ...
+
+
+
+```{r}
+appg$Avg_PPG - mean(mj_basic_prime$PTS)
+```
+
+SCORES:
+Wade: 6
+Derozan: 5
+Kobe: 9
+Lebron: 8
+Kawhi: 4
+
+
+```{r}
+ggplot() +
+  geom_line(data = mj_basic_prime, aes(x = PrimeYear, y = STL), color = "red") + 
+  geom_line(data = dwade_basic_prime, aes(x = PrimeYear, y = STL), color = "black") + 
+  geom_line(data = derozan_basic_prime, aes(x = PrimeYear, y = STL, color = "gray")) + 
+  geom_line(data = kobe_basic_prime, aes(x = PrimeYear, y = STL), color = "purple") + 
+  geom_line(data = lebron_basic_prime, aes(x = PrimeYear, y = STL), color = "yellow") +
+  geom_line(data = kawhi_basic_prime, aes(x = PrimeYear, y = STL), color = "blue") +
+  geom_point(data = mj_basic_prime, aes(x = PrimeYear, y = STL), color = "red") + 
+  geom_point(data = dwade_basic_prime, aes(x = PrimeYear, y = STL), color = "black") +
+  geom_point(data = derozan_basic_prime, aes(x = PrimeYear, y = STL, color = "gray")) + 
+  geom_point(data = kobe_basic_prime, aes(x = PrimeYear, y = STL), color = "purple") + 
+  geom_point(data = lebron_basic_prime, aes(x = PrimeYear, y = STL), color = "yellow") +
+  geom_point(data = kawhi_basic_prime, aes(x = PrimeYear, y = STL), color = "blue") +
+  scale_color_manual(name='Player',
+                     breaks=c('Jordan', 'Wade', 'DeRozan', 'Bryant', 'James', 'Leonard'),
+                     values=c('Jordan' = "red", 'Wade' = "black", 'DeRozan' = "gray", 'Bryant'="purple", 'James'="yellow", 'Leonard'="blue")) +
+  theme(legend.title=element_text(size=12), legend.text=element_text(size=10)) 
+```
+
+```{r}
+aspg <- tribble(
+~Player, ~Avg_SPG,
+#Sad?/12 months/an account
+"Michael Jordan", mean(mj_basic_prime$STL),
+"Dwyane Wade", mean(dwade_basic_prime$STL),
+"DeMar DeRozan", mean(derozan_basic_prime$STL),
+"Kobe Bryant", mean(kobe_basic_prime$STL),
+"LeBron James", mean(lebron_basic_prime$STL),
+"Kawhi Leonard", mean(kawhi_basic_prime$STL),
+)
+
+aspg %>% ggplot() +
+  geom_bar(aes(x = Player, y = Avg_SPG, color = Player, fill = Player), stat = 'identity')
+```
+
+
+```{r}
+aspg$Avg_SPG - mean(mj_basic_prime$STL)
+```
+
+
+```{r}
+ggplot() +
+  geom_line(data = mj_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "red") + 
+  geom_line(data = dwade_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "black") + 
+  geom_line(data = derozan_basic_prime, aes(x = PrimeYear, y = `FG%`, color = "gray")) + 
+  geom_line(data = kobe_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "purple") + 
+  geom_line(data = lebron_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "yellow") +
+  geom_line(data = kawhi_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "blue") +
+  geom_point(data = mj_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "red") + 
+  geom_point(data = dwade_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "black") +
+  geom_point(data = derozan_basic_prime, aes(x = PrimeYear, y = `FG%`, color = "gray")) + 
+  geom_point(data = kobe_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "purple") + 
+  geom_point(data = lebron_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "yellow") +
+  geom_point(data = kawhi_basic_prime, aes(x = PrimeYear, y = `FG%`), color = "blue") +
+  scale_color_manual(name='Player',
+                     breaks=c('Jordan', 'Wade', 'DeRozan', 'Bryant', 'James', 'Leonard'),
+                     values=c('Jordan' = "red", 'Wade' = "black", 'DeRozan' = "gray", 'Bryant'="purple", 'James'="yellow", 'Leonard'="blue")) +
+  theme(legend.title=element_text(size=12), legend.text=element_text(size=10)) 
+```
+
+
+```{r}
+afgp <- tribble(
+~Player, ~`Avg_FG%`,
+#Sad?/12 months/an account
+"Michael Jordan", mean(mj_basic_prime$`FG%`),
+"Dwyane Wade", mean(dwade_basic_prime$`FG%`),
+"DeMar DeRozan", mean(derozan_basic_prime$`FG%`),
+"Kobe Bryant", mean(kobe_basic_prime$`FG%`),
+"LeBron James", mean(lebron_basic_prime$`FG%`),
+"Kawhi Leonard", mean(kawhi_basic_prime$`FG%`),
+)
+
+afgp %>% ggplot() +
+  geom_bar(aes(x = Player, y = `Avg_FG%`, color = Player, fill = Player), stat = 'identity')
+```
+
+```{r}
+afgp$`Avg_FG%` - mean(mj_basic_prime$`FG%`)
+```
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+library(tidyverse)
+library(httr)
+# Installing Packages
+install.packages("ClusterR")
+install.packages("cluster")
+  
+# Loading package
+library(ClusterR)
+library(cluster)
+
+headers = c(
+  `Connection` = 'keep-alive',
+  `Accept` = 'application/json, text/plain, */*',
+  `x-nba-stats-token` = 'true',
+  `X-NewRelic-ID` = 'VQECWF5UChAHUlNTBwgBVw==',
+  `User-Agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36',
+  `x-nba-stats-origin` = 'stats',
+  `Sec-Fetch-Site` = 'same-origin',
+  `Sec-Fetch-Mode` = 'cors',
+  `Referer` = 'https://stats.nba.com/players/leaguedashplayerbiostats/',
+  `Accept-Encoding` = 'gzip, deflate, br',
+  `Accept-Language` = 'en-US,en;q=0.9'
+)
+
+url <- "https://stats.nba.com/stats/shotchartdetail?AheadBehind=&CFID=33&CFPARAMS=2019-20&ClutchTime=&Conference=&ContextFilter=&ContextMeasure=FGA&DateFrom=&DateTo=&Division=&EndPeriod=10&EndRange=28800&GROUP_ID=&GameEventID=&GameID=&GameSegment=&GroupID=&GroupMode=&GroupQuantity=5&LastNGames=0&LeagueID=00&Location=&Month=0&OnOff=&OpponentTeamID=0&Outcome=&PORound=0&Period=0&PlayerID=893&PlayerID1=&PlayerID2=&PlayerID3=&PlayerID4=&PlayerID5=&PlayerPosition=&PointDiff=&Position=&RangeType=0&RookieYear=&Season=1996-97&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StartPeriod=1&StartRange=0&StarterBench=&TeamID=0&VsConference=&VsDivision=&VsPlayerID1=&VsPlayerID2=&VsPlayerID3=&VsPlayerID4=&VsPlayerID5=&VsTeamID="
+
+res <- httr::GET(url = url, httr::add_headers(.headers=headers))
+json_resp <- jsonlite::fromJSON(content(res, "text"))
+
+df <- data.frame(json_resp$resultSets$rowSet[1])
+colnames(df) <- json_resp[["resultSets"]][["headers"]][[1]]
+
+df$LOC_X <- as.numeric(as.character(df$LOC_X))
+df$LOC_Y <- as.numeric(as.character(df$LOC_Y))
+
+df %>% 
+  ggplot(aes(x = LOC_X, y = LOC_Y)) + 
+  geom_point() +
+  coord_equal()
+jordan <- mean(as.numeric(df$SHOT_DISTANCE))
+```
+
+
+```{r}
+ggplot(df, aes(x=LOC_X, y=LOC_Y)) +
+  geom_point() +
+  theme_bw() + xlim(-250, 250) + ylim(-50, 450) + ggtitle("Michael Jordan FGA: 1996 - 1997")
+```
+
+
+```{r}
+df <- df %>% select(LOC_X, LOC_Y)
+
+
+kmeans.re <- kmeans(df, centers = 6, nstart = 200)
+kmeans.re
+  
+# Cluster identification for 
+# each observation
+kmeans.re$cluster
+  
+# Confusion Matrix
+
+# Model Evaluation and visualization
+plot(df[c("LOC_X", "LOC_Y")])
+plot(df[c("LOC_X", "LOC_Y")], 
+     col = kmeans.re$cluster)
+plot(df[c("LOC_X", "LOC_Y")], 
+     col = kmeans.re$cluster, 
+     main = "K-means with 6 clusters")
+  
+## Plotiing cluster centers
+kmeans.re$centers
+kmeans.re$centers[, c("LOC_X", "LOC_Y")]
+  
+# cex is font size, pch is symbol
+points(kmeans.re$centers[, c("LOC_X", "LOC_Y")], 
+       col = 1:6, pch = 8, cex = 3) 
+  
+## Visualizing clusters
+y_kmeans <- kmeans.re$cluster
+clusplot(df[, c("LOC_X", "LOC_Y")],
+         y_kmeans,
+         lines = 0,
+         shade = TRUE,
+         color = TRUE,
+         labels = 1,
+         plotchar = FALSE,
+         span = TRUE,
+         main = paste("Jordan Cluster Chart"),
+         xlab = 'X Loc',
+         ylab = 'Y Loc')
+
+kmeans.re$centers
+```
+
+
+
+
+```{r}
+headers = c(
+  `Connection` = 'keep-alive',
+  `Accept` = 'application/json, text/plain, */*',
+  `x-nba-stats-token` = 'true',
+  `X-NewRelic-ID` = 'VQECWF5UChAHUlNTBwgBVw==',
+  `User-Agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36',
+  `x-nba-stats-origin` = 'stats',
+  `Sec-Fetch-Site` = 'same-origin',
+  `Sec-Fetch-Mode` = 'cors',
+  `Referer` = 'https://stats.nba.com/players/leaguedashplayerbiostats/',
+  `Accept-Encoding` = 'gzip, deflate, br',
+  `Accept-Language` = 'en-US,en;q=0.9'
+)
+
+url <- "https://stats.nba.com/stats/shotchartdetail?AheadBehind=&CFID=33&CFPARAMS=2019-20&ClutchTime=&Conference=&ContextFilter=&ContextMeasure=FGA&DateFrom=&DateTo=&Division=&EndPeriod=10&EndRange=28800&GROUP_ID=&GameEventID=&GameID=&GameSegment=&GroupID=&GroupMode=&GroupQuantity=5&LastNGames=0&LeagueID=00&Location=&Month=0&OnOff=&OpponentTeamID=0&Outcome=&PORound=0&Period=0&PlayerID=2548&PlayerID1=&PlayerID2=&PlayerID3=&PlayerID4=&PlayerID5=&PlayerPosition=&PointDiff=&Position=&RangeType=0&RookieYear=&Season=2008-09&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StartPeriod=1&StartRange=0&StarterBench=&TeamID=0&VsConference=&VsDivision=&VsPlayerID1=&VsPlayerID2=&VsPlayerID3=&VsPlayerID4=&VsPlayerID5=&VsTeamID="
+
+res <- httr::GET(url = url, httr::add_headers(.headers=headers))
+json_resp <- jsonlite::fromJSON(content(res, "text"))
+
+df <- data.frame(json_resp$resultSets$rowSet[1])
+colnames(df) <- json_resp[["resultSets"]][["headers"]][[1]]
+
+df$LOC_X <- as.numeric(as.character(df$LOC_X))
+df$LOC_Y <- as.numeric(as.character(df$LOC_Y))
+
+df %>% 
+  ggplot(aes(x = LOC_X, y = LOC_Y)) + 
+  geom_point() +
+  coord_equal() + xlim(-200, 200) + ylim(0, 450)
+
+wade<- mean(as.numeric(df$SHOT_DISTANCE))
+```
+
+```{r}
+ggplot(df, aes(x=LOC_X, y=LOC_Y) ) +
+  geom_point() +
+  theme_bw() + xlim(-250, 250) + ylim(-50, 450) + ggtitle("Dwyane Wade FGA: 2008 - 2009")
+```
+
+
+```{r}
+headers = c(
+  `Connection` = 'keep-alive',
+  `Accept` = 'application/json, text/plain, */*',
+  `x-nba-stats-token` = 'true',
+  `X-NewRelic-ID` = 'VQECWF5UChAHUlNTBwgBVw==',
+  `User-Agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36',
+  `x-nba-stats-origin` = 'stats',
+  `Sec-Fetch-Site` = 'same-origin',
+  `Sec-Fetch-Mode` = 'cors',
+  `Referer` = 'https://stats.nba.com/players/leaguedashplayerbiostats/',
+  `Accept-Encoding` = 'gzip, deflate, br',
+  `Accept-Language` = 'en-US,en;q=0.9'
+)
+
+url <- "https://stats.nba.com/stats/shotchartdetail?AheadBehind=&CFID=33&CFPARAMS=2019-20&ClutchTime=&Conference=&ContextFilter=&ContextMeasure=FGA&DateFrom=&DateTo=&Division=&EndPeriod=10&EndRange=28800&GROUP_ID=&GameEventID=&GameID=&GameSegment=&GroupID=&GroupMode=&GroupQuantity=5&LastNGames=0&LeagueID=00&Location=&Month=0&OnOff=&OpponentTeamID=0&Outcome=&PORound=0&Period=0&PlayerID=201942&PlayerID1=&PlayerID2=&PlayerID3=&PlayerID4=&PlayerID5=&PlayerPosition=&PointDiff=&Position=&RangeType=0&RookieYear=&Season=2016-17&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StartPeriod=1&StartRange=0&StarterBench=&TeamID=0&VsConference=&VsDivision=&VsPlayerID1=&VsPlayerID2=&VsPlayerID3=&VsPlayerID4=&VsPlayerID5=&VsTeamID="
+
+res <- httr::GET(url = url, httr::add_headers(.headers=headers))
+json_resp <- jsonlite::fromJSON(content(res, "text"))
+
+df <- data.frame(json_resp$resultSets$rowSet[1])
+colnames(df) <- json_resp[["resultSets"]][["headers"]][[1]]
+
+df$LOC_X <- as.numeric(as.character(df$LOC_X))
+df$LOC_Y <- as.numeric(as.character(df$LOC_Y))
+
+df %>% 
+  ggplot(aes(x = LOC_X, y = LOC_Y)) + 
+  geom_point() +
+  coord_equal() + xlim(-200, 200) + ylim(0, 450)
+
+derozan <- mean(as.numeric(df$SHOT_DISTANCE))
+```
+
+
+```{r}
+ggplot(df, aes(x=LOC_X, y=LOC_Y) ) +
+  geom_point() +
+  theme_bw() + xlim(-250, 250) + ylim(-50, 450) + ggtitle("DeMar DeRozan FGA: 2016 - 2017")
+```
+
+
+
+```{r}
+headers = c(
+  `Connection` = 'keep-alive',
+  `Accept` = 'application/json, text/plain, */*',
+  `x-nba-stats-token` = 'true',
+  `X-NewRelic-ID` = 'VQECWF5UChAHUlNTBwgBVw==',
+  `User-Agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36',
+  `x-nba-stats-origin` = 'stats',
+  `Sec-Fetch-Site` = 'same-origin',
+  `Sec-Fetch-Mode` = 'cors',
+  `Referer` = 'https://stats.nba.com/players/leaguedashplayerbiostats/',
+  `Accept-Encoding` = 'gzip, deflate, br',
+  `Accept-Language` = 'en-US,en;q=0.9'
+)
+
+url <- "https://stats.nba.com/stats/shotchartdetail?AheadBehind=&CFID=33&CFPARAMS=2019-20&ClutchTime=&Conference=&ContextFilter=&ContextMeasure=FGA&DateFrom=&DateTo=&Division=&EndPeriod=10&EndRange=28800&GROUP_ID=&GameEventID=&GameID=&GameSegment=&GroupID=&GroupMode=&GroupQuantity=5&LastNGames=0&LeagueID=00&Location=&Month=0&OnOff=&OpponentTeamID=0&Outcome=&PORound=0&Period=0&PlayerID=977&PlayerID1=&PlayerID2=&PlayerID3=&PlayerID4=&PlayerID5=&PlayerPosition=&PointDiff=&Position=&RangeType=0&RookieYear=&Season=2005-06&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StartPeriod=1&StartRange=0&StarterBench=&TeamID=0&VsConference=&VsDivision=&VsPlayerID1=&VsPlayerID2=&VsPlayerID3=&VsPlayerID4=&VsPlayerID5=&VsTeamID="
+
+res <- httr::GET(url = url, httr::add_headers(.headers=headers))
+json_resp <- jsonlite::fromJSON(content(res, "text"))
+
+df <- data.frame(json_resp$resultSets$rowSet[1])
+colnames(df) <- json_resp[["resultSets"]][["headers"]][[1]]
+
+df$LOC_X <- as.numeric(as.character(df$LOC_X))
+df$LOC_Y <- as.numeric(as.character(df$LOC_Y))
+
+df %>% 
+  ggplot(aes(x = LOC_X, y = LOC_Y)) + 
+  geom_point() +
+  coord_equal() + xlim(-200, 200) + ylim(0, 450)
+
+kobe <- mean(as.numeric(df$SHOT_DISTANCE))
+```
+
+
+```{r}
+ggplot(df, aes(x=LOC_X, y=LOC_Y) ) +
+  geom_point() +
+  theme_bw() + xlim(-250, 250) + ylim(-50, 450) + ggtitle("Kobe Bryant FGA: 2005 - 2006")
+```
+
+
+
+```{r}
+headers = c(
+  `Connection` = 'keep-alive',
+  `Accept` = 'application/json, text/plain, */*',
+  `x-nba-stats-token` = 'true',
+  `X-NewRelic-ID` = 'VQECWF5UChAHUlNTBwgBVw==',
+  `User-Agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36',
+  `x-nba-stats-origin` = 'stats',
+  `Sec-Fetch-Site` = 'same-origin',
+  `Sec-Fetch-Mode` = 'cors',
+  `Referer` = 'https://stats.nba.com/players/leaguedashplayerbiostats/',
+  `Accept-Encoding` = 'gzip, deflate, br',
+  `Accept-Language` = 'en-US,en;q=0.9'
+)
+
+url <- "https://stats.nba.com/stats/shotchartdetail?AheadBehind=&CFID=33&CFPARAMS=2019-20&ClutchTime=&Conference=&ContextFilter=&ContextMeasure=FGA&DateFrom=&DateTo=&Division=&EndPeriod=10&EndRange=28800&GROUP_ID=&GameEventID=&GameID=&GameSegment=&GroupID=&GroupMode=&GroupQuantity=5&LastNGames=0&LeagueID=00&Location=&Month=0&OnOff=&OpponentTeamID=0&Outcome=&PORound=0&Period=0&PlayerID=2544&PlayerID1=&PlayerID2=&PlayerID3=&PlayerID4=&PlayerID5=&PlayerPosition=&PointDiff=&Position=&RangeType=0&RookieYear=&Season=2009-10&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StartPeriod=1&StartRange=0&StarterBench=&TeamID=0&VsConference=&VsDivision=&VsPlayerID1=&VsPlayerID2=&VsPlayerID3=&VsPlayerID4=&VsPlayerID5=&VsTeamID="
+
+res <- httr::GET(url = url, httr::add_headers(.headers=headers))
+json_resp <- jsonlite::fromJSON(content(res, "text"))
+
+df <- data.frame(json_resp$resultSets$rowSet[1])
+colnames(df) <- json_resp[["resultSets"]][["headers"]][[1]]
+
+df$LOC_X <- as.numeric(as.character(df$LOC_X))
+df$LOC_Y <- as.numeric(as.character(df$LOC_Y))
+
+df %>% 
+  ggplot(aes(x = LOC_X, y = LOC_Y)) + 
+  geom_point() +
+  coord_equal() + xlim(-200, 200) + ylim(0, 450)
+
+lebron<- mean(as.numeric(df$SHOT_DISTANCE))
+```
+
+
+```{r}
+ggplot(df, aes(x=LOC_X, y=LOC_Y) ) +
+  geom_point() +
+  theme_bw() + xlim(-250, 250) + ylim(-50, 450) + ggtitle("LeBron James FGA: 2009 - 2010")
+```
+
+
+
+```{r}
+headers = c(
+  `Connection` = 'keep-alive',
+  `Accept` = 'application/json, text/plain, */*',
+  `x-nba-stats-token` = 'true',
+  `X-NewRelic-ID` = 'VQECWF5UChAHUlNTBwgBVw==',
+  `User-Agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36',
+  `x-nba-stats-origin` = 'stats',
+  `Sec-Fetch-Site` = 'same-origin',
+  `Sec-Fetch-Mode` = 'cors',
+  `Referer` = 'https://stats.nba.com/players/leaguedashplayerbiostats/',
+  `Accept-Encoding` = 'gzip, deflate, br',
+  `Accept-Language` = 'en-US,en;q=0.9'
+)
+
+url <- "https://stats.nba.com/stats/shotchartdetail?AheadBehind=&CFID=33&CFPARAMS=2019-20&ClutchTime=&Conference=&ContextFilter=&ContextMeasure=FGA&DateFrom=&DateTo=&Division=&EndPeriod=10&EndRange=28800&GROUP_ID=&GameEventID=&GameID=&GameSegment=&GroupID=&GroupMode=&GroupQuantity=5&LastNGames=0&LeagueID=00&Location=&Month=0&OnOff=&OpponentTeamID=0&Outcome=&PORound=0&Period=0&PlayerID=202695&PlayerID1=&PlayerID2=&PlayerID3=&PlayerID4=&PlayerID5=&PlayerPosition=&PointDiff=&Position=&RangeType=0&RookieYear=&Season=2019-20&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StartPeriod=1&StartRange=0&StarterBench=&TeamID=0&VsConference=&VsDivision=&VsPlayerID1=&VsPlayerID2=&VsPlayerID3=&VsPlayerID4=&VsPlayerID5=&VsTeamID="
+
+res <- httr::GET(url = url, httr::add_headers(.headers=headers))
+json_resp <- jsonlite::fromJSON(content(res, "text"))
+
+df <- data.frame(json_resp$resultSets$rowSet[1])
+colnames(df) <- json_resp[["resultSets"]][["headers"]][[1]]
+
+df$LOC_X <- as.numeric(as.character(df$LOC_X))
+df$LOC_Y <- as.numeric(as.character(df$LOC_Y))
+
+df %>% 
+  ggplot(aes(x = LOC_X, y = LOC_Y)) + 
+  geom_point() +
+  coord_equal() + xlim(-200, 200) + ylim(0, 450)
+
+kawhi <- mean(as.numeric(df$SHOT_DISTANCE))
+```
+
+
+```{r}
+ggplot(df, aes(x=LOC_X, y=LOC_Y) ) +
+  geom_point() +
+  theme_bw() + xlim(-250, 250) + ylim(-50, 450) + ggtitle("Kawhi Leonard FGA: 2019 - 2020")
+```
+
+
+
+
+```{r}
+mj_advanced <- read_csv('jordanadvanced.csv')
+str(mj_advanced) # seeing the data types of the variables
+dim(mj_advanced) # checking the dimensions in order to subset columns in vars()
+mj_advanced
+mj_advanced_prime <- mj_advanced %>% filter(Age %in% c(27:29, 32:34)) 
+mj_advanced_prime$PrimeYear <- 1:6
+mj_advanced_prime
+```
+
+
+
+```{r}
+dwade_advanced <- read_csv('wadeadvanced.csv')
+dwade_advanced_prime <- dwade_advanced %>% filter(Age %in% c(24:25, 27:29, 31))
+dwade_advanced_prime$PrimeYear <- 1:6
+dwade_advanced_prime
+```
+
+
+
+```{r}
+derozan_advanced <- read_csv('derozanadvanced.csv')
+derozan_advanced_prime <- derozan_advanced %>% filter(Age %in% c(26:29, 32:33))
+derozan_advanced_prime$PrimeYear <- 1:6
+derozan_advanced_prime
+```
+
+
+
+```{r}
+kobe_advanced <- read_csv('kobeadvanced.csv')
+kobe_advanced_prime <- kobe_advanced %>% filter (Age %in% c(22:23, 27:28, 30:31))
+kobe_advanced_prime$PrimeYear <- 1:6
+kobe_advanced_prime
+```
+
+
+
+```{r}
+lebron_advanced <- read_csv('lebronadvanced.csv')
+lebron_advanced_prime <- lebron_advanced %>% filter (Age %in% c(24:29))
+lebron_advanced_prime$PrimeYear <- 1:6
+lebron_advanced_prime
+```
+
+
+
+```{r}
+kawhi_advanced <- read_csv('kawhiadvanced.csv')
+kawhi_advanced_prime <- kawhi_advanced %>% filter(Age %in% c(24:29))
+kawhi_advanced_prime$PrimeYear <- 1:6
+kawhi_advanced_prime
+```
+
+```{r}
+ggplot() +
+  geom_line(data = mj_advanced_prime, aes(x = PrimeYear, y = BPM), color = "red") + 
+  geom_line(data = dwade_advanced_prime, aes(x = PrimeYear, y = BPM), color = "black") + 
+  geom_line(data = derozan_advanced_prime, aes(x = PrimeYear, y = BPM, color = "gray")) + 
+  geom_line(data = kobe_advanced_prime, aes(x = PrimeYear, y = BPM), color = "purple") + 
+  geom_line(data = lebron_advanced_prime, aes(x = PrimeYear, y = BPM), color = "yellow") +
+  geom_line(data = kawhi_advanced_prime, aes(x = PrimeYear, y = BPM), color = "blue") +
+  geom_point(data = mj_advanced_prime, aes(x = PrimeYear, y = BPM), color = "red") + 
+  geom_point(data = dwade_advanced_prime, aes(x = PrimeYear, y = BPM), color = "black") +
+  geom_point(data = derozan_advanced_prime, aes(x = PrimeYear, y = BPM, color = "gray")) + 
+  geom_point(data = kobe_advanced_prime, aes(x = PrimeYear, y = BPM), color = "purple") + 
+  geom_point(data = lebron_advanced_prime, aes(x = PrimeYear, y = BPM), color = "yellow") +
+  geom_point(data = kawhi_advanced_prime, aes(x = PrimeYear, y = BPM), color = "blue") +
+  scale_color_manual(name='Player',
+                     breaks=c('Jordan', 'Wade', 'DeRozan', 'Bryant', 'James', 'Leonard'),
+                     values=c('Jordan' = "red", 'Wade' = "black", 'DeRozan' = "gray", 'Bryant'="purple", 'James'="yellow", 'Leonard'="blue")) +
+  theme(legend.title=element_text(size=12), legend.text=element_text(size=10)) 
+```
+
+
+```{r}
+abpm <- tribble(
+~Player, ~`Avg_BPM`,
+#Sad?/12 months/an account
+"Michael Jordan", mean(mj_advanced_prime$BPM),
+"Dwyane Wade", mean(dwade_advanced_prime$BPM),
+"DeMar DeRozan", mean(derozan_advanced_prime$BPM),
+"Kobe Bryant", mean(kobe_advanced_prime$BPM),
+"LeBron James", mean(lebron_advanced_prime$BPM),
+"Kawhi Leonard", mean(kawhi_advanced_prime$BPM),
+)
+
+abpm %>% ggplot() +
+  geom_bar(aes(x = Player, y = `Avg_BPM`, color = Player, fill = Player), stat = 'identity')
+```
+
+
+```{r}
+abpm$Avg_BPM - mean(mj_advanced_prime$BPM)
+```
+
+
+
+```{r}
+ggplot() +
+  geom_line(data = mj_advanced_prime, aes(x = PrimeYear, y = WS), color = "red") + 
+  geom_line(data = dwade_advanced_prime, aes(x = PrimeYear, y = WS), color = "black") + 
+  geom_line(data = derozan_advanced_prime, aes(x = PrimeYear, y = WS, color = "gray")) + 
+  geom_line(data = kobe_advanced_prime, aes(x = PrimeYear, y = WS), color = "purple") + 
+  geom_line(data = lebron_advanced_prime, aes(x = PrimeYear, y = WS), color = "yellow") +
+  geom_line(data = kawhi_advanced_prime, aes(x = PrimeYear, y = WS), color = "blue") +
+  geom_point(data = mj_advanced_prime, aes(x = PrimeYear, y = WS), color = "red") + 
+  geom_point(data = dwade_advanced_prime, aes(x = PrimeYear, y = WS), color = "black") +
+  geom_point(data = derozan_advanced_prime, aes(x = PrimeYear, y = WS, color = "gray")) + 
+  geom_point(data = kobe_advanced_prime, aes(x = PrimeYear, y = WS), color = "purple") + 
+  geom_point(data = lebron_advanced_prime, aes(x = PrimeYear, y = WS), color = "yellow") +
+  geom_point(data = kawhi_advanced_prime, aes(x = PrimeYear, y = WS), color = "blue") +
+  scale_color_manual(name='Player',
+                     breaks=c('Jordan', 'Wade', 'DeRozan', 'Bryant', 'James', 'Leonard'),
+                     values=c('Jordan' = "red", 'Wade' = "black", 'DeRozan' = "gray", 'Bryant'="purple", 'James'="yellow", 'Leonard'="blue")) +
+  theme(legend.title=element_text(size=12), legend.text=element_text(size=10)) 
+```
+
+
+```{r}
+aws <- tribble(
+~Player, ~`Avg_WS`,
+#Sad?/12 months/an account
+"Michael Jordan", mean(mj_advanced_prime$WS),
+"Dwyane Wade", mean(dwade_advanced_prime$WS),
+"DeMar DeRozan", mean(derozan_advanced_prime$WS),
+"Kobe Bryant", mean(kobe_advanced_prime$WS),
+"LeBron James", mean(lebron_advanced_prime$WS),
+"Kawhi Leonard", mean(kawhi_advanced_prime$WS),
+)
+
+aws %>% ggplot() +
+  geom_bar(aes(x = Player, y = `Avg_WS`, color = Player, fill = Player), stat = 'identity')
+```
+
+```{r}
+aws$Avg_WS - mean(mj_advanced_prime$WS)
+```
+
+
+```{r}
+jordan - jordan
+wade
+derozan
+kobe
+lebron
+kawhi
+wade - jordan
+derozan - jordan
+kobe - jordan
+lebron - jordan
+kawhi - jordan
+```
+
