@@ -139,28 +139,10 @@ appg %>% ggplot() +
   geom_bar(aes(x = Player, y = Avg_PPG, color = Player, fill = Player), stat = 'identity')
 ```
 
-Criteria:
-
-Point Differential        Score
-
-0 - 1                     10
-
-1.1 - 2                    9
-
-...                         ...
-
-
 
 ```{r}
 appg$Avg_PPG - mean(mj_basic_prime$PTS)
 ```
-
-SCORES:
-Wade: 6
-Derozan: 5
-Kobe: 9
-Lebron: 8
-Kawhi: 4
 
 
 ```{r}
@@ -249,14 +231,6 @@ afgp$`Avg_FG%` - mean(mj_basic_prime$`FG%`)
 
 
 ```{r}
-
-```
-
-
-
-
-```{r}
-library(tidyverse)
 library(httr)
 # Installing Packages
 install.packages("ClusterR")
@@ -303,53 +277,6 @@ jordan <- mean(as.numeric(df$SHOT_DISTANCE))
 ggplot(df, aes(x=LOC_X, y=LOC_Y)) +
   geom_point() +
   theme_bw() + xlim(-250, 250) + ylim(-50, 450) + ggtitle("Michael Jordan FGA: 1996 - 1997")
-```
-
-
-```{r}
-df <- df %>% select(LOC_X, LOC_Y)
-
-
-kmeans.re <- kmeans(df, centers = 6, nstart = 200)
-kmeans.re
-  
-# Cluster identification for 
-# each observation
-kmeans.re$cluster
-  
-# Confusion Matrix
-
-# Model Evaluation and visualization
-plot(df[c("LOC_X", "LOC_Y")])
-plot(df[c("LOC_X", "LOC_Y")], 
-     col = kmeans.re$cluster)
-plot(df[c("LOC_X", "LOC_Y")], 
-     col = kmeans.re$cluster, 
-     main = "K-means with 6 clusters")
-  
-## Plotiing cluster centers
-kmeans.re$centers
-kmeans.re$centers[, c("LOC_X", "LOC_Y")]
-  
-# cex is font size, pch is symbol
-points(kmeans.re$centers[, c("LOC_X", "LOC_Y")], 
-       col = 1:6, pch = 8, cex = 3) 
-  
-## Visualizing clusters
-y_kmeans <- kmeans.re$cluster
-clusplot(df[, c("LOC_X", "LOC_Y")],
-         y_kmeans,
-         lines = 0,
-         shade = TRUE,
-         color = TRUE,
-         labels = 1,
-         plotchar = FALSE,
-         span = TRUE,
-         main = paste("Jordan Cluster Chart"),
-         xlab = 'X Loc',
-         ylab = 'Y Loc')
-
-kmeans.re$centers
 ```
 
 
@@ -624,6 +551,8 @@ kawhi_advanced_prime$PrimeYear <- 1:6
 kawhi_advanced_prime
 ```
 
+
+
 ```{r}
 ggplot() +
   geom_line(data = mj_advanced_prime, aes(x = PrimeYear, y = BPM), color = "red") + 
@@ -660,6 +589,7 @@ abpm <- tribble(
 abpm %>% ggplot() +
   geom_bar(aes(x = Player, y = `Avg_BPM`, color = Player, fill = Player), stat = 'identity')
 ```
+
 
 
 ```{r}
