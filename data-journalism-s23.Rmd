@@ -1,0 +1,109 @@
+---
+title: "Data Journalism Spring 2023"
+author: "Joshua Susanto"
+date: "2023-05-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Title:** How Can We Predict a Breakout Season?
+
+**Idea:** Take a group of players who have had a “breakout season” (create a criteria that constitutes  what is considered a breakout season) and compare a variety of their stats, team composition, and other factors in order to determine a potential trend in having a breakout season.
+
+**Method:**  We will select a group of about 25-30 players who have had a breakout season and gather their stats from both their breakout season as well as their previous season. We mean to look for trends in our data through focusing on a variety of these players stats including but not limited to:
+Usage Ratings
+Team composition
+Basic Stats: PPG, RPG, APG, SPG, and shot percentages
+Shot volume and shot selection
+Box +/- : metric that estimates a player’s ability to impact the game, based on how they compare to an average players’ contribution to points per 100 possessions
+Win Shares: tries to split up credit for the team’s successes to individual players
+O/D Rating: offense/defense rating
+Active Years
+Position
+
+We will need to focus on the differences in these stats between their prior and breakout season. Using different forms of analyses and visualizations, we will try to identify a certain trend or pattern between these players which may give us insight as to what goes into predicting a breakout season for an NBA player. 
+
+
+**Sources:** 
+https://www.basketball-reference.com/players/h/halibty01.html
+https://www.basketball-reference.com/players/e/edwaran01.html
+https://www.basketball-reference.com/players/g/grantje01.html
+https://medium.com/the-sports-scientist/nba-breakout-seasons-by-the-numbers-2b7e46ca
+https://stackoverflow.com/questions/20101994/how-to-git-pull-from-master-into-the-development-branch
+
+
+**What constitutes a breakout season**
+
+- players have to had played a certain amount of time the prior season in order to account for injuries
+  - at least 65 games to be considered for awards
+  - for the sake of leniency, players must have played at least 55 games in the season
+- use a statistic that best quantifies a player's overall value
+  - according to multiple sources, the best stat for measuring a player's overall value is efficiency
+- use the PER (player efficiency rating) in order to measure quantities of value
+- see the largest jumps in PER, cut out data that has large jumps yet still below average or 60% percentile
+
+Data used from kaggle: (https://www.kaggle.com/datasets/drgilermo/nba-players-stats?resource=download&select=Seasons_Stats.csv)
+
+(note this data only has information up the 2017 NBA season)
+
+```{r}
+# import tidyverse
+library(tidyverse)
+
+# read in seasons data
+seasons_data = read_csv('Seasons_Stats.csv')
+
+head(seasons_data)
+```
+
+
+```{r}
+# filter data, want player to have played over 50 games and want recorded PER, remove special characters from the player's name
+
+seasons_data_clean = seasons_data %>% filter(G >= 50,!is.na(PER)) %>% mutate(Player = str_replace_all(Player, "[^[:alnum:]]", " ")) %>% mutate(Player = str_trim(Player, side = 'right')) 
+head(seasons_data_clean)
+```
+
+```{r}
+# filter all players that have played more than one season
+elligible.players = seasons_data_clean %>% group_by(Player) %>% count() %>% filter(n > 1)
+elligible.players = elligible.players$Player
+head(elligible.players, 20)
+```
+
+```{r}
+max_diff = c()
+max_diff_season = c()
+for (i in elligible.players) {
+  temp = seasons_data_clean %>% filter(Player == i) 
+  per = temp$PER
+  per_diff = c(0)
+  for (j in 1:(length(per)-1)) {
+    diff = per[j+1] - per[j]
+    per_diff = append(per_diff, diff)
+  }
+  max_diff = append(max_diff, max(per_diff))
+  max_season = temp$Year[which(per_diff == max(per_diff))[1]] #
+  max_diff_season = append(max_diff_season, max_season)
+}
+```
+
+
+
+```{r}
+potential_breakout_seasons <- tibble(
+  Player = elligible.players,
+  `Potential Breakout Season` = max_diff_season,
+  `PER Differential` = max_diff
+)
+arrange(potential_breakout_seasons, desc(`PER Differential`))
+```
+
+```{r}
+hist(potential_breakout_seasons$`PER Differential`, breaks = 50, main = 'Histogram of PER Differentials', xlab = 'PER Differential', col = 'lightgray')
+```
+
+
