@@ -31,8 +31,7 @@ We will need to focus on the differences in these stats between their prior and 
 https://www.basketball-reference.com/players/h/halibty01.html
 https://www.basketball-reference.com/players/e/edwaran01.html
 https://www.basketball-reference.com/players/g/grantje01.html
-https://medium.com/the-sports-scientist/nba-breakout-seasons-by-the-numbers-2b7e46ca
-https://stackoverflow.com/questions/20101994/how-to-git-pull-from-master-into-the-development-branch
+https://www.kaggle.com/datasets/drgilermo/nba-players-stats?resource=download&select=Seasons_Stats.csv
 
 
 **What constitutes a breakout season**
@@ -63,20 +62,25 @@ head(seasons_data)
 ```{r}
 # filter data, want player to have played over 50 games and want recorded PER, remove special characters from the player's name
 
-seasons_data_clean = seasons_data %>% filter(G >= 50,!is.na(PER)) %>% mutate(Player = str_replace_all(Player, "[^[:alnum:]]", " ")) %>% mutate(Player = str_trim(Player, side = 'right')) 
+seasons_data_clean = seasons_data %>% filter(!is.na(PER)) %>% mutate(Player = str_replace_all(Player, "[^[:alnum:]]", " ")) %>% mutate(Player = str_trim(Player, side = 'right')) 
 head(seasons_data_clean)
 ```
 
 ```{r}
-# filter all players that have played more than one season
+# filter all players that have played more than one season 
 elligible.players = seasons_data_clean %>% group_by(Player) %>% count() %>% filter(n > 1)
 elligible.players = elligible.players$Player
 head(elligible.players, 20)
 ```
 
+
+
 ```{r}
+# this function is used to calculate the largest per difference for every player
+# this model fails to consider the possibility that multiple players can have the same name in the same season, can be improved
 max_diff = c()
 max_diff_season = c()
+max_diff_per = c()
 for (i in elligible.players) {
   temp = seasons_data_clean %>% filter(Player == i) 
   per = temp$PER
@@ -86,24 +90,46 @@ for (i in elligible.players) {
     per_diff = append(per_diff, diff)
   }
   max_diff = append(max_diff, max(per_diff))
-  max_season = temp$Year[which(per_diff == max(per_diff))[1]] #
+  max_season = temp$Year[which(per_diff == max(per_diff))[1]] 
   max_diff_season = append(max_diff_season, max_season)
+  temp2 = seasons_data_clean %>% filter(Player == i, Year == max_season) %>% select(PER)
+  max_diff_per = append(max_diff_per, temp2$PER[1])
 }
 ```
 
 
+Now that we have all of our players' biggest PER improvement, we can show our results in descending order to see which player/season have had the largest improvement.
 
 ```{r}
 potential_breakout_seasons <- tibble(
   Player = elligible.players,
-  `Potential Breakout Season` = max_diff_season,
-  `PER Differential` = max_diff
+  `Year` = max_diff_season,
+  `PER Differential` = max_diff,
+  `PER` = max_diff_per
 )
-arrange(potential_breakout_seasons, desc(`PER Differential`))
+potential_breakout_seasons = potential_breakout_seasons %>% arrange(desc(`PER Differential`))
+potential_breakout_seasons
 ```
 
 ```{r}
 hist(potential_breakout_seasons$`PER Differential`, breaks = 50, main = 'Histogram of PER Differentials', xlab = 'PER Differential', col = 'lightgray')
 ```
 
+Now we must further quantify a breakout season by imposing a minimum PER in order to be considered a breakout season. Our floor will be the average PER plus 3, which is always 18 by definition. 
+
+```{r}
+breakout_seasons = potential_breakout_seasons %>% filter(PER >= 18) %>% mutate(`Previous PER` = PER - `PER Differential`)
+print(breakout_seasons)
+```
+
+And we are left with 395 potential breakout seasons in the entirety of NBA history (of available data). For more familiar names we can see the best breakout seasons since the 2000s
+
+```{r}
+# must account for the potential season jump
+breakout_seasons %>% filter(Year >= 2000)
+```
+
+```{r}
+
+```
 
