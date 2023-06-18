@@ -92,9 +92,11 @@ for (i in elligible.players) {
   max_diff = append(max_diff, max(per_diff))
   max_season = temp$Year[which(per_diff == max(per_diff))[1]] 
   max_diff_season = append(max_diff_season, max_season)
-  temp2 = seasons_data_clean %>% filter(Player == i, Year == max_season) %>% select(PER)
+  temp2 = seasons_data_clean %>% filter(Player == i, Year == max_season) %>% dplyr::select(PER)
   max_diff_per = append(max_diff_per, temp2$PER[1])
 }
+
+
 ```
 
 
@@ -109,6 +111,7 @@ potential_breakout_seasons <- tibble(
 )
 potential_breakout_seasons = potential_breakout_seasons %>% arrange(desc(`PER Differential`))
 potential_breakout_seasons
+seasons_data_clean %>% filter(Player == 'DeAndre Liggins')
 ```
 
 ```{r}
