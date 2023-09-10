@@ -7,13 +7,17 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(ggridges)
+library(ggplot2)
+library(viridis)
+library(hrbrthemes)
 ```
 
 **Title:** How Can We Predict a Breakout Season?
 
 **Idea:** Take a group of players who have had a “breakout season” (create a criteria that constitutes  what is considered a breakout season) and compare a variety of their stats, team composition, and other factors in order to determine a potential trend in having a breakout season.
 
-**Method:**  We will select a group of about 25-30 players who have had a breakout season and gather their stats from both their breakout season as well as their previous season. We mean to look for trends in our data through focusing on a variety of these players stats including but not limited to:
+**Method:**  We will select a group of about 25-30 players who have had a breakout season and gather their stats from both their breakout season as well as their previous seasons. We mean to look for trends in our data through focusing on a variety of these players stats including but not limited to:
 Usage Ratings
 Team composition
 Basic Stats: PPG, RPG, APG, SPG, and shot percentages
@@ -62,15 +66,18 @@ head(seasons_data)
 ```{r}
 # filter data, want player to have played over 50 games and want recorded PER, remove special characters from the player's name
 
-seasons_data_clean = seasons_data %>% filter(!is.na(PER)) %>% mutate(Player = str_replace_all(Player, "[^[:alnum:]]", " ")) %>% mutate(Player = str_trim(Player, side = 'right')) 
+seasons_data_clean = seasons_data %>% filter(!is.na(PER), PER <= 40, PER > 0, G > 50) %>% mutate(Player = str_replace_all(Player, "[^[:alnum:]]", " ")) %>% mutate(Player = str_trim(Player, side = 'right')) 
 head(seasons_data_clean)
 ```
 
+
+
+
 ```{r}
 # filter all players that have played more than one season 
-elligible.players = seasons_data_clean %>% group_by(Player) %>% count() %>% filter(n > 1)
-elligible.players = elligible.players$Player
-head(elligible.players, 20)
+elligible.players = seasons_data_clean %>% group_by(Player) %>% count() %>% filter(n > 1) 
+players = elligible.players$Player
+head(players, 20)
 ```
 
 
@@ -81,13 +88,14 @@ head(elligible.players, 20)
 max_diff = c()
 max_diff_season = c()
 max_diff_per = c()
-for (i in elligible.players) {
+for (i in players) {
   temp = seasons_data_clean %>% filter(Player == i) 
   per = temp$PER
   per_diff = c(0)
   for (j in 1:(length(per)-1)) {
     diff = per[j+1] - per[j]
     per_diff = append(per_diff, diff)
+    
   }
   max_diff = append(max_diff, max(per_diff))
   max_season = temp$Year[which(per_diff == max(per_diff))[1]] 
@@ -102,16 +110,17 @@ for (i in elligible.players) {
 
 Now that we have all of our players' biggest PER improvement, we can show our results in descending order to see which player/season have had the largest improvement.
 
+
 ```{r}
 potential_breakout_seasons <- tibble(
-  Player = elligible.players,
+  Player = players,
   `Year` = max_diff_season,
   `PER Differential` = max_diff,
   `PER` = max_diff_per
 )
 potential_breakout_seasons = potential_breakout_seasons %>% arrange(desc(`PER Differential`))
 potential_breakout_seasons
-seasons_data_clean %>% filter(Player == 'DeAndre Liggins')
+
 ```
 
 ```{r}
@@ -121,18 +130,201 @@ hist(potential_breakout_seasons$`PER Differential`, breaks = 50, main = 'Histogr
 Now we must further quantify a breakout season by imposing a minimum PER in order to be considered a breakout season. Our floor will be the average PER plus 3, which is always 18 by definition. 
 
 ```{r}
-breakout_seasons = potential_breakout_seasons %>% filter(PER >= 18) %>% mutate(`Previous PER` = PER - `PER Differential`)
+cutoff = potential_breakout_seasons$`PER Differential`[(1960-1960*0.8)] #finding 80th percentile of per diff
+
+breakout_seasons = potential_breakout_seasons %>% filter(PER >= 19) %>% mutate(`Previous PER` = PER - `PER Differential`)
 print(breakout_seasons)
 ```
 
 And we are left with 395 potential breakout seasons in the entirety of NBA history (of available data). For more familiar names we can see the best breakout seasons since the 2000s
 
 ```{r}
+hist(breakout_seasons$`PER Differential`, breaks = 50, main = 'Histogram of PER Differentials', xlab = 'PER Differential', col = 'lightgray')
+```
+
+
+
+```{r}
 # must account for the potential season jump
-breakout_seasons %>% filter(Year >= 2000)
+modern = breakout_seasons %>% filter(Year >= 2000)
+modern
+```
+
+
+
+
+```{r}
+breakout_seasons2 = breakout_seasons %>% filter(`PER Differential` >= cutoff)
+
+breakout_seasons2 # breakout seasons
+
+hist(breakout_seasons2$`PER Differential`, breaks = 50, main = 'Histogram of PER Differentials', xlab = 'PER Differential', col = 'lightgray')
+```
+
+
+```{r}
+breakout_players = breakout_seasons2$Player
+
+seasons_data_clean %>% filter(Player %in% breakout_players)
+
+# position, usage, and age
+
+breakout3 = breakout_seasons2 %>% left_join(seasons_data_clean)
+
+
+breakout3 %>% ggplot(aes(x=Pos, fill = Pos)) +  
+  geom_bar( ) +
+  scale_fill_hue(c = 40) +
+  theme(legend.position="none") +
+  ggtitle('Positions of NBA Breakout Seasons')
+```
+
+```{r}
+ggplot(breakout3, aes(x = `Age`, y = `Pos`, fill = ..x..)) +
+  geom_density_ridges_gradient(scale = 2, rel_min_height = 0.001) +
+  scale_fill_viridis(name = "Temp. [F]", option = "C") +
+  labs(title = 'Position vs Age for NBA Breakout Seasons') +
+  theme_ipsum() +
+    theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)
+    )
+```
+
+```{r}
+prev_team = c()
+prev_mp = c()
+prev_usg = c()
+prev_ws = c()
+prev_g = c()
+
+
+# code to get all of our desired data for the previous seasons
+for (i in 1:length(breakout3$Player)) {
+   player = breakout3$Player[i]
+   year = seasons_data_clean %>% filter(Player == player, PER == breakout3$`Previous PER`[i]) %>% select(Year)
+   if (dim(year)[1] > 1) {
+     year = year[1,1]
+   } else {
+    year = year[1] 
+   }
+   temp2 = seasons_data_clean %>% filter(Year == as.integer(year), Player == player)
+   prev_team = append(prev_team, temp2$Tm[1])
+   prev_mp = append(prev_mp, temp2$MP[1])
+   prev_usg = append(prev_usg, temp2$`USG%`[1])
+   prev_ws = append(prev_ws, temp2$WS[1])
+   prev_g = append(prev_g, temp2$G[1])
+}
+
+breakout3$prev_team = prev_team
+breakout3$prev_mp = prev_mp
+breakout3$prev_usg = prev_usg
+breakout3$prev_ws = prev_ws
+breakout3$prev_g = prev_g
+
+breakout3
+
+sum(breakout3$Tm == breakout3$prev_team)
+
+z = breakout3$Tm == breakout3$prev_team
+
+team_change = ifelse(z == TRUE, "Yes", "No")
+
+breakout3$team_change = team_change
 ```
 
 ```{r}
 
+data <- data.frame(
+  type = c(rep("Minutes Played (Prior)", 120), rep("Minutes Played (Breakout)", 120) ),
+  value = c(breakout3$prev_mp, breakout3$MP)
+)
+
+
+a = data %>%
+  ggplot(aes(x=value, fill=type)) +
+    geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', bins = 50) +
+    scale_fill_manual(values=c("#69b3a2", "#404080")) +
+    theme_ipsum() +
+    ggtitle('Histogram of Minutes Played') +
+    labs(fill="") 
+
+
+data2 <- data.frame(
+  type = c(rep("Usage % (Prior)", 120), rep("Usage % (Breakout)", 120) ),
+  value = c(breakout3$prev_usg, breakout3$`USG%`)
+)
+
+
+b = data2 %>%
+  ggplot(aes(x=value, fill=type)) +
+    geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', bins = 50) +
+    scale_fill_manual(values=c("#69b3a2", "#404080")) +
+    ggtitle('Histogram of Usage Percentage') +
+    theme_ipsum() +
+    labs(fill="") 
+
+a
+b
+```
+
+```{r}
+changed = breakout3 %>% filter(team_change == 'Yes')
+notchanged = breakout3 %>% filter(team_change == 'No')
+
+ggplot(data=breakout3, aes(x=MP, group=team_change, fill=team_change)) +
+    geom_density(adjust=1.5, alpha=.4) +
+    ggtitle('Minutes Played Density Grouped by Team Change') +
+    xlim(500,4000) 
+    theme_ipsum()
+
+ggplot(data=breakout3, aes(x=`USG%`, group=team_change, fill=team_change)) +
+    geom_density(adjust=1.5, alpha=.4) +
+    ggtitle('Usage Percentage Density Grouped by Team Change') +
+    xlim(0,50) 
+    theme_ipsum()
+```
+
+```{r}
+data <- data.frame(
+  type = c(rep("Minutes Played (Prior)", 87), rep("Minutes Played (Breakout)", 87) ),
+  value = c(changed$prev_mp, changed$MP)
+)
+
+
+a = data %>%
+  ggplot(aes(x=value, fill=type)) +
+    geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', bins = 50) +
+    scale_fill_manual(values=c("#69b3a2", "#404080")) +
+    theme_ipsum() +
+    ggtitle('Histogram of Minutes Played') +
+    labs(fill="") 
+
+
+data2 <- data.frame(
+  type = c(rep("Usage % (Prior)", 120), rep("Usage % (Breakout)", 120) ),
+  value = c(breakout3$prev_usg, breakout3$`USG%`)
+)
+
+
+b = data2 %>%
+  ggplot(aes(x=value, fill=type)) +
+    geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', bins = 50) +
+    scale_fill_manual(values=c("#69b3a2", "#404080")) +
+    ggtitle('Histogram of Usage Percentage') +
+    theme_ipsum() +
+    labs(fill="") 
+
+a
+b
+```
+
+```{r}
+season23 = read_csv('season23advanced.csv')
+```
+
+```{r}
+season23 %>% filter(G >= 50, Age < 25, Age > 21, PER > 13)
 ```
 
